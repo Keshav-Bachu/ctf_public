@@ -34,19 +34,27 @@ def TrainModel(XTrain, rewards, actions, learning_rate = 0.0001, itterations = 5
     targetQ = tf.placeholder(shape=[None],dtype=tf.float32)
     self_actions = tf.placeholder(shape=[None],dtype=tf.int32)
     
-    layer1, weightTemp, biasTemp = helper.conv_net(trainSet, XTrain.shape[3], 8, 10)
+    layer1, weightTemp, biasTemp = helper.conv_net(trainSet, XTrain.shape[3], 4, 10)
+    weights_store.append(weightTemp)
+    biases_store.append(biasTemp)
+    
+    layer2, weightTemp, biasTemp = helper.conv_net(layer1, 10, 8, 8)
     weights_store.append(weightTemp)
     biases_store.append(biasTemp)
     
     flattened = helper.flatten(layer1)
     
-    fully_connected, weightTemp, biasTemp = helper.fc_layer(flattened, flattened.get_shape()[1:4].num_elements(), 4)
+    fully_connected1, weightTemp, biasTemp = helper.fc_layer(flattened, flattened.get_shape()[1:4].num_elements(), 64)
+    weights_store.append(weightTemp)
+    biases_store.append(biasTemp)
+    
+    fully_connected2, weightTemp, biasTemp = helper.fc_layer(fully_connected1, fully_connected1.get_shape()[1:4].num_elements(), 4)
     weights_store.append(weightTemp)
     biases_store.append(biasTemp)
     
     #valueOutput = tf.nn.softmax_cross_entropy_with_logits(logits = fully_connected,labels=actionSet)
     #cost = computeCost(fully_connected, rewardSet, actionSet)
-    cost, prediction ,finalPrediction = helper.expReplayHelper(fully_connected, targetQ, self_actions)
+    cost, prediction ,finalPrediction = helper.expReplayHelper(fully_connected2, targetQ, self_actions)
     optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(cost)
     
     init = tf.global_variables_initializer()
@@ -57,7 +65,7 @@ def TrainModel(XTrain, rewards, actions, learning_rate = 0.0001, itterations = 5
         sess.run(init)
         temp_cost = 0
         for itter in range (itterations):
-            _,temp_cost, check = sess.run([optimizer, cost, fully_connected], feed_dict=feed_dict)
+            _,temp_cost = sess.run([optimizer, cost], feed_dict=feed_dict)
             #check = sess.run([cost], feed_dict={trainSet: XTrain, rewardSet: rewards, actionSet: actions, targetQ: qInput, self_actions:self_actions_input})
 
             if(itter % 100 == 0):
@@ -67,7 +75,7 @@ def TrainModel(XTrain, rewards, actions, learning_rate = 0.0001, itterations = 5
             
     
     #get the weights
-        calcTaken = tf.arg_max(fully_connected, 1)
+        #calcTaken = tf.arg_max(fully_connected, 1)
         """
         predict = tf.arg_max(Qout, 1)
         randomProbability = tf.random_uniform([-1,], 0,1)
