@@ -21,12 +21,14 @@ https://arxiv.org/pdf/1602.01783.pdf\
 \
 Instantiate multiple, get gradients, and push them to the policy\
 \
+Once in a while take random action instead of the argmax\
+\
 ______________\
 Add the synchronous update:\
 \pard\pardeftab720\sl280\partightenfactor0
 
 \f1 \cf2 \expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 if T mod Itarget == 0 then Update the target network \uc0\u952  \u8722  
+if T mod Itarget == 0 then Update the target network \uc0\u952  \u8722  
 \f2 \uc0\u8592 
 \f1  \uc0\u952  end if if t mod IAsyncUpdate == 0 or s is terminal then Perform asynchronous update of \u952  using d\u952 . Clear gradients d\u952  
 \f2 \uc0\u8592 

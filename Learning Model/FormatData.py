@@ -189,5 +189,5 @@ games = games.reshape(games.shape[0] * games.shape[1], games.shape[2], games.sha
 gameResults = gameResults.reshape(gameResults.shape[0] * gameResults.shape[1], 1)
 actionAll = actionAll.reshape(actionAll.shape[0] * actionAll.shape[1], 1)
 
-weights, biases, actionsTaken = REL.TrainModel(games, gameResults, actionAll)
+weights, biases, actionsTaken, actionsExploration = REL.TrainModel(games, gameResults, actionAll)
 #REL.makePredictions(games, weights, biases)

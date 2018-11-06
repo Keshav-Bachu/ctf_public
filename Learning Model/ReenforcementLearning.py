@@ -46,7 +46,7 @@ def TrainModel(XTrain, rewards, actions, learning_rate = 0.0001, itterations = 5
     
     #valueOutput = tf.nn.softmax_cross_entropy_with_logits(logits = fully_connected,labels=actionSet)
     #cost = computeCost(fully_connected, rewardSet, actionSet)
-    cost = helper.expReplayHelper(fully_connected, targetQ, self_actions)
+    cost, prediction ,finalPrediction = helper.expReplayHelper(fully_connected, targetQ, self_actions)
     optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(cost)
     
     init = tf.global_variables_initializer()
@@ -68,8 +68,16 @@ def TrainModel(XTrain, rewards, actions, learning_rate = 0.0001, itterations = 5
     
     #get the weights
         calcTaken = tf.arg_max(fully_connected, 1)
-        weights, biases, actionsTaken = sess.run([weights_store, biases_store, calcTaken], feed_dict={trainSet: XTrain, rewardSet: rewards, actionSet: actions})
-    return weights, biases, actionsTaken
+        """
+        predict = tf.arg_max(Qout, 1)
+        randomProbability = tf.random_uniform([-1,], 0,1)
+        randomDecision = tf.random_uniform([-1,], 0,4, tf.int32);
+        #finalOutput = tf.cond(randomProbability < boundsFactor, lambda: tf.identity(randomDecision), lambda: tf.identity(predict))
+        finalOutput = tf.where(randomProbability < 0.3, tf.cast(randomDecision, tf.int32), tf.cast(predict, tf.int32))
+        """
+        weights, biases, actionsTaken = sess.run([weights_store, biases_store, prediction], feed_dict={trainSet: XTrain, rewardSet: rewards, actionSet: actions})
+        TrueVals = sess.run(finalPrediction, feed_dict={trainSet: XTrain, rewardSet: rewards, actionSet: actions})
+    return weights, biases, actionsTaken, TrueVals
 
 """
 Inputs:

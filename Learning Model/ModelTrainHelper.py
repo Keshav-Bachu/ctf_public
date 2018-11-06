@@ -145,6 +145,13 @@ def expReplayHelper(finalLayer, targetQ, self_actions, h_size = 4, actions = 4):
     
     predict = tf.arg_max(Qout, 1)
     
+    randomProbability = tf.random_uniform(tf.shape(predict), 0,1)
+    randomDecision = tf.random_uniform(tf.shape(predict), 0,5, tf.int32)
+    #finalOutput = tf.cond(randomProbability < boundsFactor, lambda: tf.identity(randomDecision), lambda: tf.identity(predict))
+    finalOutput = tf.where(randomProbability < 0.3, tf.cast(randomDecision, tf.int32), tf.cast(predict, tf.int32))
+    
+    
+    
     #targetQ = tf.placeholder(shape=[None],dtype=tf.float32)
     #self_actions = tf.placeholder(shape=[None],dtype=tf.int32)
     actions_onehot = tf.one_hot(self_actions, actions,dtype=tf.float32)
@@ -154,4 +161,4 @@ def expReplayHelper(finalLayer, targetQ, self_actions, h_size = 4, actions = 4):
     td_error = tf.square(targetQ - Q)
     loss = tf.reduce_mean(td_error)
     
-    return loss
+    return loss, predict, finalOutput
