@@ -122,14 +122,12 @@ def addPadding(observation, objectpad, observationSpace, objectLook):
             
     return observation
         
-        
-    
-
+   
 #Start of the main program
 #load in the X and Y data
 
-gameResults = np.load('/Users/keshavbachu/Documents/User Space/DASLAB Assignment/ctf_public-Release/gameResults.npy')
-gameObservations = np.load('/Users/keshavbachu/Documents/User Space/DASLAB Assignment/ctf_public-Release/gameTrain.npy')
+gameResults = np.load('Data Folder/gameResults.npy')
+gameObservations = np.load('Data Folder/gameTrain.npy')
 
 
 #gameResults: [# Examples, turns, observation.shape[0], observation.shape[1]]
@@ -189,5 +187,9 @@ games = games.reshape(games.shape[0] * games.shape[1], games.shape[2], games.sha
 gameResults = gameResults.reshape(gameResults.shape[0] * gameResults.shape[1], 1)
 actionAll = actionAll.reshape(actionAll.shape[0] * actionAll.shape[1], 1)
 
-weights, biases, actionsTaken, actionsExploration = REL.TrainModel(games, gameResults, actionAll)
+weights, biases, actionsTaken, actionsExploration, qouts = REL.TrainModel(games, gameResults, actionAll, itterations = 30000)
+#tf.reset_default_graph()
 #REL.makePredictions(games, weights, biases)
+
+#weights, biases, actionsTaken, actionsExploration = REL.TrainModel(games, gameResults, actionAll, itterations = 1000, weights = weights, biases = biases)
+#REL.TrainModel(games, gameResults, actionAll, itterations = 1000, QWInput = qout, weights = weights, biases = biases)

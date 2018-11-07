@@ -42,7 +42,7 @@ def generatePlaceholders(trainX, trainReward, trainAction):
     
     return Xtrain, rewardTrain, actionTrain
     
-def conv_net(input_data, num_input_channels, filter_shape, num_filters, weights = None, biases = None):
+def conv_net(input_data, num_input_channels, filter_shape, num_filters, weights = None, biases = None, layerNumber = 0):
     #weights = create_weights(shape=[conv_filter_size, conv_filter_size, num_input_channels, num_filters])
     conv_filt_shape = [filter_shape,filter_shape, num_input_channels, num_filters]
     
@@ -50,8 +50,10 @@ def conv_net(input_data, num_input_channels, filter_shape, num_filters, weights 
         weights = create_weights(conv_filt_shape)
         biases = create_biases(num_filters)
     else:
-        weights = tf.convert_to_tensor(weights, dtype=tf.float32)
-        biases = tf.convert_to_tensor(biases, dtype=tf.float32)
+        weights = tf.Variable(tf.convert_to_tensor(weights, dtype=tf.float32))
+        biases = tf.Variable(tf.convert_to_tensor(biases, dtype=tf.float32))
+        #weights = tf.get_variable(name = "weight" + str(layerNumber), initializer = weights)
+        #biases = tf.get_variable(name = "bias" + str(layerNumber), initializer = biases)
     
     out_layer = tf.nn.conv2d(input=input_data, filter= weights, strides= [1, 1, 1, 1], padding='SAME')
     out_layer += biases
@@ -68,14 +70,16 @@ def flatten(layer):
     return layer
  
 
-def fc_layer(input,num_inputs,num_outputs, use_relu = False, weights = None, biases = None):
+def fc_layer(input,num_inputs,num_outputs, use_relu = False, weights = None, biases = None, layerNumber = 0):
     
     if(type(weights) != np.ndarray):
         weights = create_weights(shape=[num_inputs, num_outputs])
         biases = create_biases(num_outputs)
     else:
-        weights = tf.convert_to_tensor(weights, dtype=tf.float32)
-        biases = tf.convert_to_tensor(biases, dtype=tf.float32)
+        weights = tf.Variable(tf.convert_to_tensor(weights, dtype=tf.float32))
+        biases = tf.Variable(tf.convert_to_tensor(biases, dtype=tf.float32))
+        #weights = tf.get_variable(name = "weight" + str(layerNumber), initializer = weights)
+        #biases = tf.get_variable(name = "bias" + str(layerNumber), initializer = biases)
  
     layer = tf.matmul(input, weights) + biases
     if(use_relu == True):
@@ -116,9 +120,12 @@ def computeCost(actionSoftmax, rewardSet, actionSet):
     
     discountFactor = tf.constant(0.1, tf.float32)
     learnedValue = actionMax * discountFactor + rewardSet
-    cross_entropy = learnedValue - actionSet
-    cost = tf.reduce_mean(actionSoftmax)
-    return cost
+    #cross_entropy = learnedValue - actionSet
+    #cost = tf.reduce_mean(cross_entropy)
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits = actionSoftmax,labels = actionSet)
+    cost = tf.reduce_mean(cross_entropy)
+    predict = tf.arg_max(actionSoftmax, 1)
+    return cost, predict, predict
 
 
     """
@@ -137,21 +144,24 @@ finalLayer: final layer of the NN before calculations
 h_size: "The size of the final convolutional layer before splitting it into Advantage and Value streams"
 actions: Number of available actions 
 """
-def expReplayHelper(finalLayer, targetQ, self_actions, h_size = 4, actions = 4):
-    streamQ = tf.layers.flatten(finalLayer)
+def expReplayHelper(finalLayer, targetQ, self_actions, h_size = 5, actions = 5, QWIN = None):
+    #streamQ = tf.layers.flatten(finalLayer)
+    streamQ = finalLayer
     xavier_init = tf.contrib.layers.xavier_initializer()
-    QW  = tf.Variable(xavier_init([h_size, actions]))
+    
+    if(type(QWIN) != np.ndarray):
+        QW  = tf.Variable(xavier_init([h_size, actions]))
+    else:
+        #QW = tf.get_variable(name = "QW", initializer = QWIN)
+        QW = tf.Variable(tf.convert_to_tensor(QWIN, dtype = tf.float32))
     Qout = tf.matmul(streamQ, QW)
     
     predict = tf.arg_max(Qout, 1)
-    
     randomProbability = tf.random_uniform(tf.shape(predict), 0,1)
     randomDecision = tf.random_uniform(tf.shape(predict), 0,5, tf.int32)
     #finalOutput = tf.cond(randomProbability < boundsFactor, lambda: tf.identity(randomDecision), lambda: tf.identity(predict))
     finalOutput = tf.where(randomProbability < 0.3, tf.cast(randomDecision, tf.int32), tf.cast(predict, tf.int32))
-    
-    
-    
+ 
     #targetQ = tf.placeholder(shape=[None],dtype=tf.float32)
     #self_actions = tf.placeholder(shape=[None],dtype=tf.int32)
     actions_onehot = tf.one_hot(self_actions, actions,dtype=tf.float32)
@@ -161,4 +171,4 @@ def expReplayHelper(finalLayer, targetQ, self_actions, h_size = 4, actions = 4):
     td_error = tf.square(targetQ - Q)
     loss = tf.reduce_mean(td_error)
     
-    return loss, predict, finalOutput
+    return loss, predict, finalOutput, QW
